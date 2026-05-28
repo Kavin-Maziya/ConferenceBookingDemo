@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using API.Models;
 using API.Data;
 using API.DTOs;
-using Microsoft.AspNetCore.Components.Web;
+using API.Exceptions;
 
 namespace API.Controllers;
 
@@ -28,9 +28,7 @@ public class BookingsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Booking>>> GetBookingsAsync()
     {
-        // await does NOT block the thread.
-        // It says: "pause this method, return the thread to the pool,
-        // and resume here when the I/O finishes."
+
         await Task.Delay(200); // stands in for: await _db.Bookings.ToListAsync()
         return Ok(BookingStore.Bookings); // HTTP 200 OK — Body: JSON array of Booking objects
     }
@@ -52,124 +50,113 @@ public class BookingsController : ControllerBase
         // A 404 tells the client "this thing does not exist" — that is useful information.
         if (booking is null)
         {
-            return NotFound(); // HTTP 404 Not Found
+            throw new BookingNotFoundException(id);
         }
 
         return Ok(booking); // HTTP 200 OK — Body: single Booking object as JSON
     }
 
+    // POST: /api/bookings
     [HttpPost]
-   public async Task<ActionResult<BookingResponse>> CreateBookingAsync([FromBody] CreateBookingRequest request)
+    public async Task<ActionResult<BookingResponse>> CreateBookingAsync(
+        [FromBody] CreateBookingRequest request)
     {
-        await Task.Delay(50); // will replace with an actual database call 
+        await Task.Delay(50); // Simulate I/O latency — Week 2 replaces with real DB call
 
-        // 1. IDEMPOTENCY
-        // Prevent a duplicate addition of a booking if the client submits the same form twice. 
-
-        bool isDuplicate = BookingStore.Bookings.Any(b => b.Room == request.Room && 
-        b.StartTime == request.StartTime);
+        // 1. IDEMPOTENCY GUARD
+        // Prevent a duplicate if the client submits the same form twice.
+        // (React Strict Mode fires effects twice; users double-click Submit buttons.)
+        bool isDuplicate = BookingStore.Bookings.Any(b =>
+            b.Room == request.Room && b.StartTime == request.StartTime);
 
         if (isDuplicate)
         {
-            return Conflict(); // HTTP 409 ~ ProblemDetails service fills in the body
+           throw new DuplicateBookingException(request.Room, request.StartTime!.Value); // HTTP 409 — Problem Details middleware fills in the body
         }
-        //2. Map received DTO to actual Domain Model
-        var newBooking =  new Booking(
+
+        // 2. MAP DTO → DOMAIN MODEL
+        // Server generates the ID — the client never controls this.
+        var newBooking = new Booking(
             Guid.NewGuid(),
             request.Title,
-            request.Speaker, 
+            request.Speaker,
             request.Room,
-            request.StartTime!.Value
+            request.StartTime!.Value // DateTime? from DTO — safe to unwrap, [Required] already validated
         );
 
-        //3. Save the Booking
-        BookingStore.Bookings.Add(newBooking); 
+        // 3. SAVE
+        BookingStore.Bookings.Add(newBooking);
 
-        //4. Map Domain Model to to Response DTO
+        // 4. MAP DOMAIN MODEL → RESPONSE DTO
         var response = new BookingResponse(
             newBooking.Id,
             newBooking.Title,
             newBooking.Speaker,
             newBooking.Room,
             newBooking.StartTime
-        ); 
+        );
 
-        //5. return the 201 createed + location header
-        //CreatedAtAction sets the location header : Get /api/bookings/{id}
-
-        return CreatedAtAction(nameof(GetBookingByIdAsync), new {id = response.id}, response);
-
-
-
+        // 5. RETURN 201 CREATED + Location header
+        // CreatedAtAction sets the Location header to: GET /api/bookings/{id}
+        return CreatedAtAction(nameof(GetBookingByIdAsync), new { id = response.id }, response);
     }
 
-    //Delete : api/bookings/{id}
-
-    [HttpDelete]
-    public async Task<ActionResult> DeleteBookingAsync(Guid id)
+    // PUT: /api/bookings/{id}
+    // Replaces all fields of an existing booking.
+    // Body shape: same as POST — the client sends the full updated booking.
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<BookingResponse>> UpdateBookingAsync(
+        Guid id,
+        [FromBody] CreateBookingRequest request)
     {
         await Task.Delay(50);
-        
-        var booking = BookingStore.Bookings.FirstOrDefault(b => b.Id == id);
 
-        if(booking == null)
+        var existingBooking = BookingStore.Bookings.FirstOrDefault(b => b.Id == id);
+
+        if (existingBooking is null)
         {
-            return NotFound(); //HTTP 404 - Problem Details middleware add the body
-
+            return NotFound();
         }
-         
-         BookingStore.Bookings.Remove(booking);
 
-         return NoContent(); //Http  204 - operation succeeded and there's nothing to return. 
-    }
-   [HttpPut("{id:guid}")]
-   //Replace certain/all fields in an existing Booking 
-   //Body of this method is the same as POST, In the sense that the client sends back the full updated booking. 
-    public async Task<ActionResult<BookingResponse>> UpdateBookingAsync(Guid id, [FromBody] CreateBookingRequest request)
-    {
-        await Task.Delay(50); // will replace with an actual database call 
-
-        // 1. IDEMPOTENCY
-        // Prevent a duplicate addition of a booking if the client submits the same form twice. 
-
-        var existingBooking  = BookingStore.Bookings.FirstOrDefault(b => b.Id == id);
-
-        if (existingBooking == null)
-        {
-            return NotFound(); // HTTP 404 ~ ProblemDetails service fills in the body
-        }
-        //2. Save the updated fields 
+        // Records are immutable — you cannot mutate properties directly.
+        // The 'with' expression creates a new copy with the changed fields only.
         var updatedBooking = existingBooking with
         {
-            Title =  request.Title,
-            Speaker = request.Speaker, 
-            Room = request.Room,
-            StartTime = request.StartTime!.Value
+            Title     = request.Title,
+            Speaker   = request.Speaker,
+            Room      = request.Room,
+            StartTime = request.StartTime!.Value // nullable because of [Required] on DTO
         };
 
-        //3. Remove old booking, and save the updated one
         BookingStore.Bookings.Remove(existingBooking);
         BookingStore.Bookings.Add(updatedBooking);
 
-       
-
-        //4. Map Domain Model to to Response DTO
         var response = new BookingResponse(
             updatedBooking.Id,
             updatedBooking.Title,
             updatedBooking.Speaker,
             updatedBooking.Room,
-           updatedBooking.StartTime
-        ); 
+            updatedBooking.StartTime
+        );
 
-        //5. return the 201 createed + location header
-        //CreatedAtAction sets the location header : Get /api/bookings/{id}
-
-        return Ok(response);
-
-
-
+        return Ok(response); // HTTP 200 OK — returns the updated booking
     }
-        
-   
+
+    // DELETE: /api/bookings/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<ActionResult> DeleteBookingAsync(Guid id)
+    {
+        await Task.Delay(50);
+
+        var booking = BookingStore.Bookings.FirstOrDefault(b => b.Id == id);
+
+        if (booking is null)
+        {
+           throw new BookingNotFoundException(id); // HTTP 404 — Problem Details middleware adds the body
+        }
+
+        BookingStore.Bookings.Remove(booking);
+
+        return NoContent(); // HTTP 204 — operation succeeded, nothing to return
+    }
 }
