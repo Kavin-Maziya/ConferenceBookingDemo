@@ -7,6 +7,12 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers;
 
+// Day 4 — Role definitions for this system:
+//   Employee         — regular staff: can view and create bookings
+//   Receptionist     — front desk:    can view, create, and update bookings
+//   FacilitiesManager — manages rooms: can view and update bookings
+//   Admin            — full access:   can do everything including delete
+
 [ApiController]
 [Route("api/[controller]")]
 public class BookingsController : ControllerBase
@@ -58,7 +64,9 @@ public class BookingsController : ControllerBase
     }
 
     // POST: /api/bookings
-    [Authorize]
+    // Day 4 — Employees, Receptionists, and Admins can create bookings.
+    // Facilities Managers only manage existing room assignments — they do not create new ones.
+    [Authorize(Roles = "Employee,Receptionist,Admin")]
     [HttpPost]
     public async Task<ActionResult<BookingResponse>> CreateBookingAsync(
         [FromBody] CreateBookingRequest request)
@@ -105,8 +113,10 @@ public class BookingsController : ControllerBase
 
     // PUT: /api/bookings/{id}
     // Replaces all fields of an existing booking.
-    // Body shape: same as POST — the client sends the full updated booking.
-    [Authorize]
+    // Day 4 — Receptionists update on behalf of attendees.
+    //          Facilities Managers can reassign or adjust room details.
+    //          Admins have full access. Employees must contact the front desk to modify.
+    [Authorize(Roles = "Receptionist,FacilitiesManager,Admin")]
     [HttpPut("{id:guid}")]
     
     public async Task<ActionResult<BookingResponse>> UpdateBookingAsync(
@@ -147,7 +157,8 @@ public class BookingsController : ControllerBase
     }
 
     // DELETE: /api/bookings/{id}
-     [Authorize(Roles = "Admin")]
+    // Day 4 — Admin only. Deletion is irreversible; no other role can perform it.
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id:guid}")]
    
     public async Task<ActionResult> DeleteBookingAsync(Guid id)
