@@ -19,10 +19,12 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger): IEx
 
        var statusCode = exception switch
        {
-           BookingNotFoundException => StatusCodes.Status404NotFound,
+           BookingNotFoundException  => StatusCodes.Status404NotFound,
+           RoomNotFoundException     => StatusCodes.Status404NotFound,
            DuplicateBookingException => StatusCodes.Status409Conflict,
-           _ => StatusCodes.Status500InternalServerError       
-       }; 
+           InvalidBookingException   => StatusCodes.Status400BadRequest,
+           _ => StatusCodes.Status500InternalServerError
+       };
        //3. Construct Problem Details shape 
        var problemDetails = new ProblemDetails
        {
@@ -45,9 +47,10 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger): IEx
     //Helper method to get Problem details title
     private static string GetTitle(int statusCode) => statusCode switch
     {
-        StatusCodes.Status404NotFound => "Resource Not Found",
-        StatusCodes.Status409Conflict => "Resource Conflict", 
-        _                             => "Internal server error"
+        StatusCodes.Status400BadRequest => "Bad Request",
+        StatusCodes.Status404NotFound   => "Resource Not Found",
+        StatusCodes.Status409Conflict   => "Resource Conflict",
+        _                               => "Internal Server Error"
     };
 
 }
