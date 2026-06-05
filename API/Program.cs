@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using API.Data;
+using API.Extensions;
 using Microsoft.EntityFrameworkCore;
+using API.Repositories;
 // SeedData and BookingDbContext are both in API.Data — no additional using needed.
 
 //════════════════════════════════════════════════════
@@ -33,6 +35,11 @@ try
     builder.Services.AddOpenApi();
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
+    // DI registration
+    builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+    builder.Services.AddScoped<IRoomService, RoomService>();
+    builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+    builder.Services.AddScoped<IBookingService, BookingService>();
 
     // Day 4 — CORS: tells the browser that requests from the Next.js dev server are permitted.
     // CHANGED: Fixed typo in origin (was "localhost:300") and renamed policy to "NextJsPolicy"
@@ -77,6 +84,8 @@ try
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddDbContext<BookingDbContext>(options => 
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
 
     //════════════════════════════════════════════════════
     // TRANSITION — Build() seals the DI container.

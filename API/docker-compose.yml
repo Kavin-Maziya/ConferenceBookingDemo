@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: conference-postgres
+
+    environment:
+      POSTGRES_DB: ConferenceBookings
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123!
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

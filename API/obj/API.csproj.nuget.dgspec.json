@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Skye\\Desktop\\ConferenceBookingAPI\\API\\API.csproj": {}
+    "C:\\Projects\\ConferenceDemo\\ConferenceBookingAPI\\API\\API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Skye\\Desktop\\ConferenceBookingAPI\\API\\API.csproj": {
+    "C:\\Projects\\ConferenceDemo\\ConferenceBookingAPI\\API\\API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Skye\\Desktop\\ConferenceBookingAPI\\API\\API.csproj",
+        "projectUniqueName": "C:\\Projects\\ConferenceDemo\\ConferenceBookingAPI\\API\\API.csproj",
         "projectName": "API",
-        "projectPath": "C:\\Users\\Skye\\Desktop\\ConferenceBookingAPI\\API\\API.csproj",
-        "packagesPath": "C:\\Users\\Skye\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Skye\\Desktop\\ConferenceBookingAPI\\API\\obj\\",
+        "projectPath": "C:\\Projects\\ConferenceDemo\\ConferenceBookingAPI\\API\\API.csproj",
+        "packagesPath": "C:\\Users\\Kavin Ozzie Maziya\\.nuget\\packages\\",
+        "outputPath": "C:\\Projects\\ConferenceDemo\\ConferenceBookingAPI\\API\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\Skye\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Kavin Ozzie Maziya\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
